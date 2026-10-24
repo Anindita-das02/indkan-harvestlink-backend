@@ -40,5 +40,16 @@ def create_enquiry():
     return enquiry_controller.create_enquiry()
 
 
+# Reference ID + Secret PIN Tracking APIs
+@app.route("/api/enquiries/track-by-pin", methods=["POST"])
+def track_enquiry_by_pin():
+    return enquiry_controller.track_enquiry_by_pin()
+
+
+@app.route("/api/enquiries/change-pin", methods=["POST"])
+def change_enquiry_pin():
+    return enquiry_controller.change_enquiry_pin()
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5001, debug=True)

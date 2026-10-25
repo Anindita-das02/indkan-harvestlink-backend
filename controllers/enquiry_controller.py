@@ -225,13 +225,42 @@ def track_enquiry_by_pin():
         raw_status = row.get("verification_status") or row.get("status") or "pending"
         status_map = {
             "pending": {"label": "Request Received", "color": "#E5C378", "step": 1},
-            "pending_kyc": {"label": "Trade KYC Review", "color": "#F39C12", "step": 2},
-            "contacted": {"label": "Quote Prepared", "color": "#3498DB", "step": 3},
-            "quote_sent": {"label": "Quote Ready", "color": "#2ECC71", "step": 3},
-            "completed": {"label": "Order Finalized", "color": "#27AE60", "step": 4},
+            "submitted": {"label": "Request Received", "color": "#E5C378", "step": 1},
+            "under_review": {"label": "Under Review (Trade KYC)", "color": "#F39C12", "step": 2},
+            "pending_kyc": {"label": "Under Review (Trade KYC)", "color": "#F39C12", "step": 2},
+            "quote_sent": {"label": "Quotation Ready", "color": "#3498DB", "step": 3},
+            "accepted": {"label": "Quotation Accepted", "color": "#2ECC71", "step": 4},
+            "quote_accepted": {"label": "Quotation Accepted", "color": "#2ECC71", "step": 4},
+            "order_confirmed": {"label": "Order Confirmed", "color": "#10B981", "step": 4},
+            "processing": {"label": "Processing & Sortex Cleaning", "color": "#8B5CF6", "step": 5},
+            "packed": {"label": "Packed in Export Bags", "color": "#F59E0B", "step": 6},
+            "shipped": {"label": "Vessel Shipped (In Transit)", "color": "#06B6D4", "step": 7},
+            "delivered": {"label": "Delivered at Port", "color": "#059669", "step": 8},
+            "completed": {"label": "Delivered / Closed", "color": "#059669", "step": 8},
+            "rejected": {"label": "Quotation Rejected", "color": "#E74C3C", "step": 0},
+            "quote_rejected": {"label": "Quotation Rejected", "color": "#E74C3C", "step": 0},
             "cancelled": {"label": "Closed / Cancelled", "color": "#E74C3C", "step": 0}
         }
         status_meta = status_map.get(raw_status, {"label": raw_status.replace("_", " ").title(), "color": "#E5C378", "step": 1})
+
+        # Fetch status audit history
+        cursor.execute("""
+            SELECT id, old_status, new_status, note, changed_by, created_at
+            FROM enquiry_status_history
+            WHERE enquiry_id = %s
+            ORDER BY id ASC
+        """, [row["id"]])
+        history_raw = cursor.fetchall()
+        history = []
+        for h in history_raw:
+            history.append({
+                "id": h["id"],
+                "old_status": h["old_status"],
+                "new_status": h["new_status"],
+                "note": h.get("note") or "",
+                "changed_by": h.get("changed_by") or "Admin",
+                "created_at": h["created_at"].strftime("%d %b %Y, %I:%M %p") if h.get("created_at") else ""
+            })
 
         enquiry_data = {
             "id": row["id"],
@@ -248,12 +277,13 @@ def track_enquiry_by_pin():
             "tax_id": row["tax_id"],
             "business_website": row.get("business_website"),
             "is_address_verified": bool(row.get("is_address_verified")),
-            "status": row["status"],
+            "status": raw_status,
             "status_label": status_meta["label"],
             "status_color": status_meta["color"],
             "step": status_meta["step"],
             "created_at": row["created_at"].strftime("%d %b %Y, %I:%M %p") if row.get("created_at") else "",
-            "items": items
+            "items": items,
+            "history": history
         }
 
         return jsonify({

@@ -140,4 +140,7 @@ def admin_save_enquiry_note(enquiry_id):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001, debug=True)
+    port = int(os.environ.get("PORT", 5001))
+    debug = os.environ.get("FLASK_ENV", "development") != "production"
+    print(f"Starting INDKAN HarvestLink API Server on http://0.0.0.0:{port} (debug={debug})")
+    app.run(host="0.0.0.0", port=port, debug=debug)
